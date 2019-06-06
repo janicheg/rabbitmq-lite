@@ -5,16 +5,16 @@ namespace SlimQ\Messaging;
 
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
-use Psr\Container\ContainerInterface;
 use Ramsey\Uuid\Uuid;
+use SlimQ\ConsumerInterFace;
 
 class QueueConsumer
 {
     /** @var AMQPChannel  */
     protected $channel;
 
-    /** @var ContainerInterface  */
-    protected $container;
+    /** @var ConsumerInterFace  */
+    protected $consumerRunner;
 
     /** @var \Ramsey\Uuid\UuidInterface */
     protected $tag;
@@ -31,10 +31,10 @@ class QueueConsumer
      * @param AMQPChannel        $channel
      * @param ContainerInterface $container
      */
-    public function __construct($queueName, AMQPChannel $channel, ContainerInterface $container)
+    public function __construct($queueName, AMQPChannel $channel, ConsumerInterFace $consumerRunner)
     {
         $this->channel = $channel;
-        $this->container = $container;
+        $this->consumerRunner = $consumerRunner;
         $this->tag = Uuid::uuid4();
         $this->queueName = $queueName;
     }
@@ -63,12 +63,10 @@ class QueueConsumer
      */
     public function start(AMQPMessage $message)
     {
-        $json = json_decode($message->body, true);
+        $json = json_decode($message->body);
 
         try {
-            $jobClass = $this->container->get($this->getTriggeredClass());
-
-            $result = $jobClass($json);
+            $this->consumerRunner->run($json);
         } catch (\Exception $exception)
         {
             $result = false;
