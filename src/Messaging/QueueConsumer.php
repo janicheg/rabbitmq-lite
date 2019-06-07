@@ -64,7 +64,7 @@ class QueueConsumer
     public function start(AMQPMessage $message)
     {
         $json = json_decode($message->body);
-
+        $result = true;
         try {
             $this->consumerRunner->run($json);
         } catch (\Exception $exception)
